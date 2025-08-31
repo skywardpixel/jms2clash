@@ -4,21 +4,27 @@ Test suite for JMS to Clash converter using pytest framework
 Run with: python -m pytest test_jms_to_clash.py -v
 """
 
+import os
+import sys
+from io import StringIO
+from unittest.mock import patch
+
 import pytest
 import yaml
-import sys
-import os
-import tempfile
-from unittest.mock import patch
-from io import StringIO
 
 # Add src directory to path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'src'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "src"))
 
 from jms_to_clash import (
-    decode_vmess, decode_vless, decode_ss, decode_trojan,
-    parse_subscription, generate_clash_config, main
+    decode_ss,
+    decode_trojan,
+    decode_vless,
+    decode_vmess,
+    generate_clash_config,
+    main,
+    parse_subscription,
 )
+
 
 class TestProxyDecoders:
     """Test individual proxy format decoders"""
@@ -30,13 +36,13 @@ class TestProxyDecoders:
         result = decode_vmess(vmess_url)
 
         assert result is not None
-        assert result['name'] == 'Test VMess'
-        assert result['type'] == 'vmess'
-        assert result['server'] == 'example.com'
-        assert result['port'] == 443
-        assert result['uuid'] == '12345678-1234-1234-1234-1234567890ab'
-        assert result['network'] == 'tcp'
-        assert result['tls'] is True
+        assert result["name"] == "Test VMess"
+        assert result["type"] == "vmess"
+        assert result["server"] == "example.com"
+        assert result["port"] == 443
+        assert result["uuid"] == "12345678-1234-1234-1234-1234567890ab"
+        assert result["network"] == "tcp"
+        assert result["tls"] is True
 
     def test_decode_vmess_websocket(self):
         """Test VMess WebSocket decoding"""
@@ -45,9 +51,9 @@ class TestProxyDecoders:
         result = decode_vmess(vmess_url)
 
         assert result is not None
-        assert result['network'] == 'ws'
-        assert result['ws-opts']['path'] == '/path'
-        assert result['ws-opts']['headers']['Host'] == 'ws.example.com'
+        assert result["network"] == "ws"
+        assert result["ws-opts"]["path"] == "/path"
+        assert result["ws-opts"]["headers"]["Host"] == "ws.example.com"
 
     def test_decode_vless(self):
         """Test VLESS URL decoding"""
@@ -56,13 +62,13 @@ class TestProxyDecoders:
         result = decode_vless(vless_url)
 
         assert result is not None
-        assert result['name'] == 'Test VLESS'
-        assert result['type'] == 'vless'
-        assert result['server'] == 'example.com'
-        assert result['port'] == 443
-        assert result['uuid'] == '12345678-1234-1234-1234-123456789abc'
-        assert result['network'] == 'tcp'
-        assert result['tls'] is True
+        assert result["name"] == "Test VLESS"
+        assert result["type"] == "vless"
+        assert result["server"] == "example.com"
+        assert result["port"] == 443
+        assert result["uuid"] == "12345678-1234-1234-1234-123456789abc"
+        assert result["network"] == "tcp"
+        assert result["tls"] is True
 
     def test_decode_shadowsocks(self):
         """Test Shadowsocks URL decoding"""
@@ -71,26 +77,28 @@ class TestProxyDecoders:
         result = decode_ss(ss_url)
 
         assert result is not None
-        assert result['name'] == 'Test SS'
-        assert result['type'] == 'ss'
-        assert result['server'] == 'example.com'
-        assert result['port'] == 8388
-        assert result['cipher'] == 'aes-256-gcm'
-        assert result['password'] == 'password'
+        assert result["name"] == "Test SS"
+        assert result["type"] == "ss"
+        assert result["server"] == "example.com"
+        assert result["port"] == 8388
+        assert result["cipher"] == "aes-256-gcm"
+        assert result["password"] == "password"
 
     def test_decode_trojan(self):
         """Test Trojan URL decoding"""
-        trojan_url = "trojan://password123@example.com:443?sni=example.com#Test%20Trojan"
+        trojan_url = (
+            "trojan://password123@example.com:443?sni=example.com#Test%20Trojan"
+        )
 
         result = decode_trojan(trojan_url)
 
         assert result is not None
-        assert result['name'] == 'Test Trojan'
-        assert result['type'] == 'trojan'
-        assert result['server'] == 'example.com'
-        assert result['port'] == 443
-        assert result['password'] == 'password123'
-        assert result['sni'] == 'example.com'
+        assert result["name"] == "Test Trojan"
+        assert result["type"] == "trojan"
+        assert result["server"] == "example.com"
+        assert result["port"] == 443
+        assert result["password"] == "password123"
+        assert result["sni"] == "example.com"
 
     def test_decode_invalid_url(self):
         """Test handling of invalid URLs"""
@@ -100,8 +108,9 @@ class TestProxyDecoders:
             decode_vless("invalid_url")
             decode_ss("invalid_url")
             decode_trojan("invalid_url")
-        except:
+        except Exception:
             pass  # Expected to fail gracefully
+
 
 class TestSubscriptionParsing:
     """Test subscription parsing functionality"""
@@ -118,10 +127,10 @@ vless://12345678-1234-1234-1234-123456789abc@example.com:443?type=tcp&security=t
         proxies = parse_subscription(subscription)
 
         assert len(proxies) == 4
-        assert proxies[0]['name'] == 'Test VMess'
-        assert proxies[1]['name'] == 'Test SS'
-        assert proxies[2]['name'] == 'Test Trojan'
-        assert proxies[3]['name'] == 'Test VLESS'
+        assert proxies[0]["name"] == "Test VMess"
+        assert proxies[1]["name"] == "Test SS"
+        assert proxies[2]["name"] == "Test Trojan"
+        assert proxies[3]["name"] == "Test VLESS"
 
     def test_parse_base64_subscription(self):
         """Test parsing base64 encoded subscription"""
@@ -134,8 +143,8 @@ ss://YWVzLTI1Ni1nY206cGFzc3dvcmQ@example.com:8388#Test%20SS"""
         proxies = parse_subscription(encoded_subscription)
 
         assert len(proxies) == 2
-        assert proxies[0]['name'] == 'Test VMess'
-        assert proxies[1]['name'] == 'Test SS'
+        assert proxies[0]["name"] == "Test VMess"
+        assert proxies[1]["name"] == "Test SS"
 
     def test_parse_empty_subscription(self):
         """Test parsing empty subscription"""
@@ -151,6 +160,7 @@ ss://YWVzLTI1Ni1nY206cGFzc3dvcmQ@example.com:8388#Test%20SS"""
         proxies = parse_subscription(subscription)
         assert len(proxies) == 0
 
+
 class TestConfigGeneration:
     """Test Clash configuration generation"""
 
@@ -158,101 +168,111 @@ class TestConfigGeneration:
         """Test generating complete Clash configuration"""
         proxies = [
             {
-                'name': 'Test Server 1',
-                'type': 'vmess',
-                'server': 'example.com',
-                'port': 443,
-                'uuid': 'test-uuid',
-                'alterId': 0,
-                'cipher': 'auto'
+                "name": "Test Server 1",
+                "type": "vmess",
+                "server": "example.com",
+                "port": 443,
+                "uuid": "test-uuid",
+                "alterId": 0,
+                "cipher": "auto",
             },
             {
-                'name': 'Test Server 2',
-                'type': 'ss',
-                'server': 'example2.com',
-                'port': 8388,
-                'cipher': 'aes-256-gcm',
-                'password': 'test-password'
-            }
+                "name": "Test Server 2",
+                "type": "ss",
+                "server": "example2.com",
+                "port": 8388,
+                "cipher": "aes-256-gcm",
+                "password": "test-password",
+            },
         ]
 
         config = generate_clash_config(proxies)
 
         # Test basic structure
-        assert 'port' in config
-        assert 'socks-port' in config
-        assert 'dns' in config
-        assert 'proxies' in config
-        assert 'proxy-groups' in config
-        assert 'rules' in config
+        assert "port" in config
+        assert "socks-port" in config
+        assert "dns" in config
+        assert "proxies" in config
+        assert "proxy-groups" in config
+        assert "rules" in config
 
         # Test specific values
-        assert config['port'] == 7890
-        assert config['socks-port'] == 7891
-        assert config['mode'] == 'rule'
+        assert config["port"] == 7890
+        assert config["socks-port"] == 7891
+        assert config["mode"] == "rule"
 
         # Test proxies
-        assert len(config['proxies']) == 2
-        assert config['proxies'][0]['name'] == 'Test Server 1'
-        assert config['proxies'][1]['name'] == 'Test Server 2'
+        assert len(config["proxies"]) == 2
+        assert config["proxies"][0]["name"] == "Test Server 1"
+        assert config["proxies"][1]["name"] == "Test Server 2"
 
         # Test proxy groups
-        assert len(config['proxy-groups']) == 14
-        group_names = [group['name'] for group in config['proxy-groups']]
-        assert '🚀 节点选择' in group_names
-        assert '♻️ 自动选择' in group_names
-        assert '🎯 全球直连' in group_names
+        assert len(config["proxy-groups"]) == 14
+        group_names = [group["name"] for group in config["proxy-groups"]]
+        assert "🚀 节点选择" in group_names
+        assert "♻️ 自动选择" in group_names
+        assert "🎯 全球直连" in group_names
 
         # Test DNS configuration
-        assert config['dns']['enable'] is True
-        assert config['dns']['enhanced-mode'] == 'fake-ip'
-        assert '119.29.29.29' in config['dns']['nameserver']
-        assert '223.5.5.5' in config['dns']['nameserver']
+        assert config["dns"]["enable"] is True
+        assert config["dns"]["enhanced-mode"] == "fake-ip"
+        assert "119.29.29.29" in config["dns"]["nameserver"]
+        assert "223.5.5.5" in config["dns"]["nameserver"]
 
     def test_empty_proxies_config(self):
         """Test generating config with no proxies"""
         config = generate_clash_config([])
 
-        assert len(config['proxies']) == 0
+        assert len(config["proxies"]) == 0
         # Proxy groups should still exist but with minimal proxies
-        assert len(config['proxy-groups']) == 14
+        assert len(config["proxy-groups"]) == 14
+
 
 class TestYAMLOutput:
     """Test YAML output functionality"""
 
     def test_yaml_output_valid(self):
         """Test that generated YAML is valid"""
-        proxies = [{
-            'name': 'Test Server',
-            'type': 'vmess',
-            'server': 'example.com',
-            'port': 443,
-            'uuid': 'test-uuid'
-        }]
+        proxies = [
+            {
+                "name": "Test Server",
+                "type": "vmess",
+                "server": "example.com",
+                "port": 443,
+                "uuid": "test-uuid",
+            }
+        ]
 
         config = generate_clash_config(proxies)
-        yaml_output = yaml.dump(config, default_flow_style=False, allow_unicode=True, sort_keys=False)
+        yaml_output = yaml.dump(
+            config, default_flow_style=False, allow_unicode=True, sort_keys=False
+        )
 
         # Should be able to load it back
         loaded_config = yaml.safe_load(yaml_output)
-        assert loaded_config['port'] == 7890
-        assert len(loaded_config['proxies']) == 1
+        assert loaded_config["port"] == 7890
+        assert len(loaded_config["proxies"]) == 1
 
     def test_yaml_unicode_support(self):
         """Test YAML output with Chinese characters"""
-        proxies = [{
-            'name': '测试服务器',
-            'type': 'vmess',
-            'server': 'example.com',
-            'port': 443,
-            'uuid': 'test-uuid'
-        }]
+        proxies = [
+            {
+                "name": "测试服务器",
+                "type": "vmess",
+                "server": "example.com",
+                "port": 443,
+                "uuid": "test-uuid",
+            }
+        ]
 
         config = generate_clash_config(proxies)
-        yaml_output = yaml.dump(config, default_flow_style=False, allow_unicode=True, sort_keys=False)
+        yaml_output = yaml.dump(
+            config, default_flow_style=False, allow_unicode=True, sort_keys=False
+        )
 
-        assert '测试服务器' in yaml_output
-        assert '节点选择' in yaml_output
+        assert "测试服务器" in yaml_output
+        assert "节点选择" in yaml_output
+
 
 class TestMainFunction:
     """Test main function and CLI integration"""
@@ -261,23 +281,23 @@ class TestMainFunction:
         """Test main function with valid input"""
         test_input = "vmess://eyJhZGQiOiJleGFtcGxlLmNvbSIsImFpZCI6IjAiLCJpZCI6IjEyMzQ1Njc4LTEyMzQtMTIzNC0xMjM0LTEyMzQ1Njc4OTBhYiIsIm5ldCI6InRjcCIsInBvcnQiOiI0NDMiLCJwcyI6IlRlc3QgVk1lc3MiLCJzY3kiOiJhdXRvIiwidGxzIjoidGxzIiwidiI6IjIifQ=="
 
-        with patch('sys.stdin', StringIO(test_input)):
-            with patch('sys.stdout', StringIO()) as mock_stdout:
-                with patch('sys.argv', ['jms_to_clash.py']):
+        with patch("sys.stdin", StringIO(test_input)):
+            with patch("sys.stdout", StringIO()) as mock_stdout:
+                with patch("sys.argv", ["jms_to_clash.py"]):
                     try:
                         main()
                     except SystemExit:
                         pass
 
                 output = mock_stdout.getvalue()
-                assert 'port: 7890' in output
-                assert 'Test VMess' in output
+                assert "port: 7890" in output
+                assert "Test VMess" in output
 
     def test_main_with_empty_input(self):
         """Test main function with empty input"""
-        with patch('sys.stdin', StringIO("")):
-            with patch('sys.stderr', StringIO()) as mock_stderr:
-                with patch('sys.argv', ['jms_to_clash.py']):
+        with patch("sys.stdin", StringIO("")):
+            with patch("sys.stderr", StringIO()) as mock_stderr:
+                with patch("sys.argv", ["jms_to_clash.py"]):
                     with pytest.raises(SystemExit) as exc_info:
                         main()
 
@@ -287,7 +307,7 @@ class TestMainFunction:
 
     def test_main_help_option(self):
         """Test main function with help option"""
-        with patch('sys.argv', ['jms_to_clash.py', '--help']):
+        with patch("sys.argv", ["jms_to_clash.py", "--help"]):
             with pytest.raises(SystemExit) as exc_info:
                 main()
 
@@ -296,7 +316,7 @@ class TestMainFunction:
 
     def test_main_version_option(self):
         """Test main function with version option"""
-        with patch('sys.argv', ['jms_to_clash.py', '--version']):
+        with patch("sys.argv", ["jms_to_clash.py", "--version"]):
             with pytest.raises(SystemExit) as exc_info:
                 main()
 
@@ -305,11 +325,12 @@ class TestMainFunction:
 
     def test_main_invalid_option(self):
         """Test main function with invalid option"""
-        with patch('sys.argv', ['jms_to_clash.py', '--invalid']):
+        with patch("sys.argv", ["jms_to_clash.py", "--invalid"]):
             with pytest.raises(SystemExit) as exc_info:
                 main()
             # Should exit with error code for invalid arguments
             assert exc_info.value.code != 0
+
 
 class TestErrorHandling:
     """Test error handling and edge cases"""
@@ -339,7 +360,7 @@ vmess://eyJhZGQiOiJleGFtcGxlLmNvbSIsImFpZCI6IjAiLCJpZCI6IjEyMzQ1Njc4LTEyMzQtMTIz
         proxies = parse_subscription(subscription)
         # Should only parse the valid VMess URL
         assert len(proxies) == 1
-        assert proxies[0]['name'] == 'Test VMess'
+        assert proxies[0]["name"] == "Test VMess"
 
     def test_special_characters_in_names(self):
         """Test handling of special characters in proxy names"""
@@ -356,7 +377,7 @@ vmess://eyJhZGQiOiJleGFtcGxlLmNvbSIsImFpZCI6IjAiLCJpZCI6IjEyMzQ1Njc4LTEyMzQtMTIz
             "ps": "Test🚀Server测试",  # Special characters and emoji
             "scy": "auto",
             "tls": "tls",
-            "v": "2"
+            "v": "2",
         }
 
         encoded = base64.b64encode(json.dumps(vmess_config).encode()).decode()
@@ -364,7 +385,8 @@ vmess://eyJhZGQiOiJleGFtcGxlLmNvbSIsImFpZCI6IjAiLCJpZCI6IjEyMzQ1Njc4LTEyMzQtMTIz
 
         result = decode_vmess(vmess_url)
         assert result is not None
-        assert result['name'] == 'Test🚀Server测试'
+        assert result["name"] == "Test🚀Server测试"
 
-if __name__ == '__main__':
-    pytest.main([__file__, '-v'])
+
+if __name__ == "__main__":
+    pytest.main([__file__, "-v"])
