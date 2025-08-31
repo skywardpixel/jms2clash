@@ -204,16 +204,21 @@ def parse_subscription(content: str) -> List[Dict[str, Any]]:
     """Parse subscription content and extract proxy configs"""
     proxies = []
 
-    # Try to decode as base64 first
-    try:
-        decoded_bytes = base64.b64decode(content + '=' * (4 - len(content) % 4))
+    # Try to decode as base64 first (only if content looks like base64)
+    # Base64 content should not contain newlines or comments
+    if '\n' not in content.strip() and not content.strip().startswith('#'):
         try:
-            decoded_content = decoded_bytes.decode('utf-8')
-        except UnicodeDecodeError:
-            decoded_content = decoded_bytes.decode('latin-1', errors='ignore')
-        content = decoded_content
-    except (binascii.Error, Exception):
-        pass
+            decoded_bytes = base64.b64decode(content + '=' * (4 - len(content) % 4))
+            try:
+                decoded_content = decoded_bytes.decode('utf-8')
+                # Only use decoded content if it contains proxy URLs
+                if any(proto in decoded_content for proto in ['vmess://', 'vless://', 'ss://', 'trojan://']):
+                    content = decoded_content
+            except UnicodeDecodeError:
+                # If UTF-8 fails, don't try latin-1 fallback for base64
+                pass
+        except (binascii.Error, Exception):
+            pass
 
     # Split by lines and process each URL
     lines = content.strip().split('\n')
