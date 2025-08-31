@@ -7,16 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Added
-- Initial implementation of JMS to Clash converter
-- Support for VMess, VLESS, Shadowsocks, and Trojan protocols
-- Chinese-optimized DNS and routing rules
-- Comprehensive test suite with 22 test cases
-- Modern Python packaging with pyproject.toml
-- Fast package management with uv
-- Cross-platform binary building
-- Development helper script (dev.py)
-- GitHub Actions for CI/CD and automated releases
+## [0.1.1] - 2024-12-19
+
+### Fixed
+- **Encoding errors**: Fixed UTF-8 decoding issues in Shadowsocks and VMess URL parsing
+- **Base64 decoding**: Added robust error handling for malformed base64 data with fallback to latin-1 encoding
+- **Error messages**: Improved error reporting with cleaner warning messages instead of verbose stack traces
+- **Subscription parsing**: Enhanced base64 subscription decoder to handle various encoding formats
+
+### Technical Improvements
+- Added `binascii.Error` exception handling for invalid base64 data
+- Implemented encoding fallback chain: UTF-8 → latin-1 → skip
+- Applied encoding fixes across all proxy decoders (VMess, Shadowsocks, subscription parser)
+- Reduced error verbosity while maintaining functionality
 
 ## [0.1.0] - 2024-08-31
 
@@ -69,5 +72,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Windows (x64) 
 - macOS (x64 & ARM64)
 
-[Unreleased]: https://github.com/skywardpixel/jms2clash/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/skywardpixel/jms2clash/compare/v0.1.1...HEAD
+[0.1.1]: https://github.com/skywardpixel/jms2clash/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/skywardpixel/jms2clash/releases/tag/v0.1.0

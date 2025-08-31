@@ -16,6 +16,7 @@ Options:
 import sys
 import json
 import base64
+import binascii
 import urllib.parse
 import re
 import yaml
@@ -23,15 +24,24 @@ import argparse
 from typing import Dict, List, Any, Optional
 from urllib.parse import urlparse, parse_qs
 
-VERSION = "0.1.0"
+VERSION = "0.1.1"
 
 def decode_vmess(vmess_url: str) -> Optional[Dict[str, Any]]:
     """Decode VMess URL to proxy config"""
     try:
         # Remove vmess:// prefix
         encoded = vmess_url[8:]
-        # Decode base64
-        decoded = base64.b64decode(encoded + '=' * (4 - len(encoded) % 4)).decode('utf-8')
+        # Decode base64 with error handling
+        try:
+            decoded_bytes = base64.b64decode(encoded + '=' * (4 - len(encoded) % 4))
+            decoded = decoded_bytes.decode('utf-8')
+        except (UnicodeDecodeError, binascii.Error):
+            # Try latin-1 encoding as fallback
+            try:
+                decoded_bytes = base64.b64decode(encoded + '=' * (4 - len(encoded) % 4))
+                decoded = decoded_bytes.decode('latin-1')
+            except (UnicodeDecodeError, binascii.Error):
+                return None
         config = json.loads(decoded)
 
         return {
@@ -59,7 +69,7 @@ def decode_vmess(vmess_url: str) -> Optional[Dict[str, Any]]:
             } if config.get('net') == 'grpc' else None
         }
     except Exception as e:
-        print(f"Error decoding VMess: {e}", file=sys.stderr)
+        print(f"Warning: Skipping malformed VMess URL (encoding error)", file=sys.stderr)
         return None
 
 def decode_vless(vless_url: str) -> Optional[Dict[str, Any]]:
@@ -105,8 +115,17 @@ def decode_ss(ss_url: str) -> Optional[Dict[str, Any]]:
             if len(parts) != 2:
                 return None
 
-            # Decode method:password
-            method_pass = base64.b64decode(parts[0] + '=' * (4 - len(parts[0]) % 4)).decode('utf-8')
+            # Decode method:password with error handling
+            try:
+                decoded_bytes = base64.b64decode(parts[0] + '=' * (4 - len(parts[0]) % 4))
+                method_pass = decoded_bytes.decode('utf-8')
+            except (UnicodeDecodeError, binascii.Error):
+                # Try latin-1 encoding as fallback
+                try:
+                    decoded_bytes = base64.b64decode(parts[0] + '=' * (4 - len(parts[0]) % 4))
+                    method_pass = decoded_bytes.decode('latin-1')
+                except (UnicodeDecodeError, binascii.Error):
+                    return None
             method, password = method_pass.split(':', 1)
 
             # Parse server:port#name
@@ -125,7 +144,16 @@ def decode_ss(ss_url: str) -> Optional[Dict[str, Any]]:
             encoded = url_parts[0]
             name = urllib.parse.unquote(url_parts[1]) if len(url_parts) > 1 else 'SS'
 
-            decoded = base64.b64decode(encoded + '=' * (4 - len(encoded) % 4)).decode('utf-8')
+            try:
+                decoded_bytes = base64.b64decode(encoded + '=' * (4 - len(encoded) % 4))
+                decoded = decoded_bytes.decode('utf-8')
+            except (UnicodeDecodeError, binascii.Error):
+                # Try latin-1 encoding as fallback
+                try:
+                    decoded_bytes = base64.b64decode(encoded + '=' * (4 - len(encoded) % 4))
+                    decoded = decoded_bytes.decode('latin-1')
+                except (UnicodeDecodeError, binascii.Error):
+                    return None
             method, rest = decoded.split(':', 1)
             password, server_port = rest.rsplit('@', 1)
             server, port = server_port.rsplit(':', 1)
@@ -141,7 +169,7 @@ def decode_ss(ss_url: str) -> Optional[Dict[str, Any]]:
             'plugin-opts': {}
         }
     except Exception as e:
-        print(f"Error decoding SS: {e}", file=sys.stderr)
+        print(f"Warning: Skipping malformed SS URL (encoding error)", file=sys.stderr)
         return None
 
 def decode_trojan(trojan_url: str) -> Optional[Dict[str, Any]]:
@@ -178,9 +206,13 @@ def parse_subscription(content: str) -> List[Dict[str, Any]]:
 
     # Try to decode as base64 first
     try:
-        decoded_content = base64.b64decode(content + '=' * (4 - len(content) % 4)).decode('utf-8')
+        decoded_bytes = base64.b64decode(content + '=' * (4 - len(content) % 4))
+        try:
+            decoded_content = decoded_bytes.decode('utf-8')
+        except UnicodeDecodeError:
+            decoded_content = decoded_bytes.decode('latin-1', errors='ignore')
         content = decoded_content
-    except:
+    except (binascii.Error, Exception):
         pass
 
     # Split by lines and process each URL
