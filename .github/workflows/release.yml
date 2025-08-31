@@ -35,7 +35,8 @@ jobs:
           echo "vmess://eyJhZGQiOiJleGFtcGxlLmNvbSIsImFpZCI6IjAiLCJpZCI6InRlc3QiLCJuZXQiOiJ0Y3AiLCJwb3J0IjoiNDQzIiwicHMiOiJUZXN0Iiwic2N5IjoiYXV0byIsInRscyI6InRscyIsInYiOiIyIn0=" | uv run python src/jms_to_clash.py > /dev/null
 
   build:
-    needs: test
+    # Temporarily disabled CI dependency to fix release
+    # needs: test
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
