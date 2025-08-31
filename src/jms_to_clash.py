@@ -24,7 +24,7 @@ import argparse
 from typing import Dict, List, Any, Optional
 from urllib.parse import urlparse, parse_qs
 
-VERSION = "0.1.1"
+VERSION = "0.1.2"
 
 def decode_vmess(vmess_url: str) -> Optional[Dict[str, Any]]:
     """Decode VMess URL to proxy config"""

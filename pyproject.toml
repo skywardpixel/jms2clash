@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "jms2clash"
-version = "0.1.1"
+version = "0.1.2"
 description = "Convert JMS subscription strings to Clash configuration files optimized for Chinese users"
 readme = "README.md"
 license = "MIT"

@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.2] - 2024-12-19
+
+### Added
+- **Automated Release System**: Comprehensive GitHub Actions workflow for cross-platform binary releases
+- **Installation Scripts**: Easy-to-use installation scripts for Linux/macOS (`install.sh`) and Windows (`install.ps1`)
+- **Cross-Platform Packages**: Pre-built binaries with documentation packaged as archives
+- **Release Verification**: SHA256 checksums for all release assets
+- **Enhanced Documentation**: Updated README with multiple installation methods
+
+### Improved
+- **Binary Packaging**: Archives now include README, LICENSE, and platform-specific installation instructions
+- **GitHub Actions**: Enhanced workflows with better error handling, platform detection, and release automation
+- **User Experience**: One-command installation for all supported platforms
+- **Release Notes**: Automated changelog extraction and comprehensive release documentation
+
+### Technical Enhancements
+- PyInstaller optimization flags for smaller, faster binaries
+- Improved cross-platform compatibility testing
+- Automated artifact verification and testing
+- Enhanced workflow error handling and debugging
+
 ## [0.1.1] - 2024-12-19
 
 ### Fixed
@@ -72,6 +93,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Windows (x64) 
 - macOS (x64 & ARM64)
 
-[Unreleased]: https://github.com/skywardpixel/jms2clash/compare/v0.1.1...HEAD
+[Unreleased]: https://github.com/skywardpixel/jms2clash/compare/v0.1.2...HEAD
+[0.1.2]: https://github.com/skywardpixel/jms2clash/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/skywardpixel/jms2clash/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/skywardpixel/jms2clash/releases/tag/v0.1.0
