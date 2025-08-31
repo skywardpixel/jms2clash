@@ -1,0 +1,174 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+  workflow_dispatch:
+    inputs:
+      test_release:
+        description: "Test release build for all platforms"
+        required: false
+        type: boolean
+        default: false
+
+jobs:
+  test:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        python-version: ["3.8", "3.9", "3.10", "3.11", "3.12"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          version: "latest"
+
+      - name: Set up Python ${{ matrix.python-version }}
+        run: uv python install ${{ matrix.python-version }}
+
+      - name: Install dependencies
+        run: |
+          uv venv --python ${{ matrix.python-version }}
+          uv pip install -e ".[dev]"
+
+      - name: Run tests
+        run: uv run pytest test_jms_to_clash.py -v --tb=short
+
+      - name: Test conversion functionality
+        run: |
+          echo "vmess://eyJhZGQiOiJleGFtcGxlLmNvbSIsImFpZCI6IjAiLCJpZCI6InRlc3QiLCJuZXQiOiJ0Y3AiLCJwb3J0IjoiNDQzIiwicHMiOiJUZXN0Iiwic2N5IjoiYXV0byIsInRscyI6InRscyIsInYiOiIyIn0=" | uv run python src/jms_to_clash.py | head -10
+
+  lint:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          version: "latest"
+
+      - name: Set up Python
+        run: uv python install 3.12
+
+      - name: Install dependencies
+        run: |
+          uv venv
+          uv pip install -e ".[dev]"
+
+      - name: Check code formatting
+        run: uv run black --check --diff src/ test_jms_to_clash.py
+
+      - name: Run linter
+        run: uv run ruff check src/ test_jms_to_clash.py
+
+  build-test:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          version: "latest"
+
+      - name: Set up Python
+        run: uv python install 3.12
+
+      - name: Install dependencies
+        run: |
+          uv venv
+          uv pip install -e ".[build]"
+
+      - name: Build binary
+        run: |
+          uv run pyinstaller --onefile --name jms2clash --console src/jms_to_clash.py
+
+      - name: Test binary (Unix)
+        if: runner.os != 'Windows'
+        run: |
+          echo "vmess://eyJhZGQiOiJleGFtcGxlLmNvbSIsImFpZCI6IjAiLCJpZCI6InRlc3QiLCJuZXQiOiJ0Y3AiLCJwb3J0IjoiNDQzIiwicHMiOiJUZXN0Iiwic2N5IjoiYXV0byIsInRscyI6InRscyIsInYiOiIyIn0=" | ./dist/jms2clash --version
+          echo "vmess://eyJhZGQiOiJleGFtcGxlLmNvbSIsImFpZCI6IjAiLCJpZCI6InRlc3QiLCJuZXQiOiJ0Y3AiLCJwb3J0IjoiNDQzIiwicHMiOiJUZXN0Iiwic2N5IjoiYXV0byIsInRscyI6InRscyIsInYiOiIyIn0=" | ./dist/jms2clash | head -5
+
+      - name: Test binary (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          echo "vmess://eyJhZGQiOiJleGFtcGxlLmNvbSIsImFpZCI6IjAiLCJpZCI6InRlc3QiLCJuZXQiOiJ0Y3AiLCJwb3J0IjoiNDQzIiwicHMiOiJUZXN0Iiwic2N5IjoiYXV0byIsInRscyI6InRscyIsInYiOiIyIn0=" | ./dist/jms2clash.exe --version
+
+  test-release:
+    if: github.event.inputs.test_release == 'true' || (github.event_name == 'push' && contains(github.ref, 'refs/heads/main'))
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            platform: linux-x64
+          - os: windows-latest
+            platform: windows-x64
+          - os: macos-13
+            platform: macos-x64
+          - os: macos-14
+            platform: macos-arm64
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          version: "latest"
+
+      - name: Set up Python
+        run: uv python install 3.12
+
+      - name: Install dependencies
+        run: |
+          uv venv
+          uv pip install -e ".[build]"
+
+      - name: Build and test release binary
+        shell: bash
+        run: |
+          # Build optimized binary
+          if [ "${{ runner.os }}" = "Windows" ]; then
+            BINARY_NAME="jms2clash.exe"
+          else
+            BINARY_NAME="jms2clash"
+          fi
+
+          uv run pyinstaller --onefile --name jms2clash --console \
+            --add-data "README.md:." \
+            --hidden-import yaml \
+            --optimize 2 \
+            --strip \
+            src/jms_to_clash.py
+
+          # Test the binary
+          if [ "${{ runner.os }}" = "Windows" ]; then
+            echo "vmess://eyJhZGQiOiJleGFtcGxlLmNvbSIsImFpZCI6IjAiLCJpZCI6InRlc3QiLCJuZXQiOiJ0Y3AiLCJwb3J0IjoiNDQzIiwicHMiOiJUZXN0Iiwic2N5IjoiYXV0byIsInRscyI6InRscyIsInYiOiIyIn0=" | dist/$BINARY_NAME --version
+          else
+            chmod +x dist/$BINARY_NAME
+            echo "vmess://eyJhZGQiOiJleGFtcGxlLmNvbSIsImFpZCI6IjAiLCJpZCI6InRlc3QiLCJuZXQiOiJ0Y3AiLCJwb3J0IjoiNDQzIiwicHMiOiJUZXN0Iiwic2N5IjoiYXV0byIsInRscyI6InRscyIsInYiOiIyIn0=" | dist/$BINARY_NAME --version
+          fi
+
+          # Get binary size
+          ls -lah dist/$BINARY_NAME
+
+      - name: Upload test binary
+        if: github.event.inputs.test_release == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-binary-${{ matrix.platform }}
+          path: dist/jms2clash*
+          retention-days: 7

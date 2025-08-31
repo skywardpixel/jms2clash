@@ -88,6 +88,8 @@ temp/
 # Output files
 *.yaml
 *.yml
+!.github/workflows/*.yml
+!.github/workflows/*.yaml
 config.yaml
 config.yml
 clash_config.yaml
