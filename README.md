@@ -10,9 +10,45 @@ Convert JMS subscription strings to Clash configuration files optimized for Chin
 - **Comprehensive testing**: Full pytest test suite
 - **Modern tooling**: Uses uv for fast package management
 
-## Quick Start
+## Installation
 
-### 1. Install uv (Modern Python Package Manager)
+### 🚀 Quick Install (Recommended)
+
+**Linux/macOS:**
+```bash
+curl -fsSL https://raw.githubusercontent.com/skywardpixel/jms2clash/main/install.sh | bash
+```
+
+**Windows (PowerShell):**
+```powershell
+iwr https://raw.githubusercontent.com/skywardpixel/jms2clash/main/install.ps1 | iex
+```
+
+### 📦 Manual Download
+
+Download pre-built binaries from [GitHub Releases](https://github.com/skywardpixel/jms2clash/releases/latest):
+
+- **Linux x64**: `jms2clash-linux-x64.tar.gz`
+- **Windows x64**: `jms2clash-windows-x64.exe.zip`
+- **macOS x64**: `jms2clash-macos-x64.tar.gz`
+- **macOS ARM64**: `jms2clash-macos-arm64.tar.gz`
+
+Extract and run directly:
+```bash
+# Linux/macOS
+tar -xzf jms2clash-*.tar.gz
+chmod +x jms2clash
+./jms2clash < subscription.txt > config.yaml
+
+# Windows
+# Extract the ZIP file and run jms2clash.exe
+```
+
+### 🛠️ Development Setup
+
+For development or building from source:
+
+#### 1. Install uv (Modern Python Package Manager)
 ```bash
 # Install uv (if not already installed)
 curl -LsSf https://astral.sh/uv/install.sh | sh
@@ -21,7 +57,7 @@ curl -LsSf https://astral.sh/uv/install.sh | sh
 brew install uv
 ```
 
-### 2. Setup Environment
+#### 2. Setup Environment
 ```bash
 # Install dependencies
 make deps
@@ -30,16 +66,7 @@ make deps
 uv pip install -e ".[dev,build]"
 ```
 
-### 3. Basic Usage
-```bash
-# Convert subscription from stdin to stdout
-cat subscription.txt | uv run python src/jms_to_clash.py > config.yaml
-
-# Or pipe directly
-echo "vmess://..." | uv run python src/jms_to_clash.py > config.yaml
-```
-
-### 4. Build and Test
+#### 3. Build and Test
 ```bash
 # Run tests
 make test
@@ -50,6 +77,8 @@ make build
 # Use binary
 echo "subscription_content" | ./dist/jms2clash > config.yaml
 ```
+
+## Quick Start
 
 ## Supported Formats
 
@@ -104,33 +133,41 @@ The output Clash config includes:
 
 ### Basic Conversion
 ```bash
+# With installed binary
+curl -s "https://example.com/subscription" | jms2clash > config.yaml
+
+# From file
+jms2clash < subscription.txt > clash_config.yaml
+
+# Multiple subscriptions
+cat sub1.txt sub2.txt | jms2clash > combined.yaml
+```
+
+### Development Usage
+```bash
 # File to file
 uv run python src/jms_to_clash.py < subscription.txt > clash_config.yaml
 
 # Pipe from curl
 curl -s "https://example.com/subscription" | uv run python src/jms_to_clash.py > config.yaml
 
-# Multiple subscriptions
-cat sub1.txt sub2.txt | uv run python src/jms_to_clash.py > combined.yaml
-```
-
-### Using the Binary
-```bash
-# After building with make build
+# Using local binary after building
 ./dist/jms2clash < subscription.txt > config.yaml
-echo "subscription" | ./dist/jms2clash > config.yaml
 ```
 
 ### Integration Examples
 ```bash
 # Automated daily update
 #!/bin/bash
-curl -s "$SUBSCRIPTION_URL" | uv run python src/jms_to_clash.py > ~/.config/clash/config.yaml
+curl -s "$SUBSCRIPTION_URL" | jms2clash > ~/.config/clash/config.yaml
 systemctl restart clash
 
 # Validate generated config
-uv run python src/jms_to_clash.py < input.txt > config.yaml
+jms2clash < input.txt > config.yaml
 python3 -c "import yaml; yaml.safe_load(open('config.yaml'))" && echo "Valid YAML"
+
+# Windows PowerShell example
+Invoke-WebRequest -Uri $SubscriptionUrl | Select-Object -ExpandProperty Content | jms2clash.exe > config.yaml
 ```
 
 ## Development
@@ -244,12 +281,15 @@ uv run pytest test_jms_to_clash.py::TestProxyDecoders::test_decode_vmess -v
 ### Debug Mode
 ```bash
 # Run with error output visible
-uv run python src/jms_to_clash.py < input.txt 2>debug.log
+jms2clash < input.txt 2>debug.log > config.yaml
 
 # Validate YAML output
 python3 -c "import yaml; yaml.safe_load(open('config.yaml'))"
 
-# Check dependencies
+# Development debug mode
+uv run python src/jms_to_clash.py < input.txt 2>debug.log
+
+# Check dependencies (development)
 uv pip list
 ```
 
@@ -271,9 +311,9 @@ pip install -e ".[dev,build]"
 - ✅ Clash Premium/Meta
 
 ### Operating Systems
-- ✅ Windows 10/11
-- ✅ macOS 10.15+
-- ✅ Linux (Ubuntu 18.04+)
+- ✅ Windows 10/11 (x64)
+- ✅ macOS 10.15+ (x64 & ARM64)
+- ✅ Linux (x64, tested on Ubuntu 18.04+, CentOS 7+)
 
 ## Performance
 
@@ -292,7 +332,7 @@ pip install -e ".[dev,build]"
 ## CLI Reference
 
 ```
-usage: jms_to_clash.py [-h] [--version]
+usage: jms2clash [-h] [--version]
 
 Convert JMS subscription strings to Clash configuration files
 
@@ -301,9 +341,10 @@ options:
   --version   show program's version number and exit
 
 Examples:
-  uv run python src/jms_to_clash.py < subscription.txt > config.yaml
-  echo "vmess://..." | uv run python src/jms_to_clash.py
-  cat subscription.txt | uv run python src/jms_to_clash.py > clash_config.yaml
+  jms2clash < subscription.txt > config.yaml
+  echo "vmess://..." | jms2clash
+  cat subscription.txt | jms2clash > clash_config.yaml
+  curl -s "subscription-url" | jms2clash > config.yaml
 
 Supported proxy formats:
   - VMess: vmess://...
